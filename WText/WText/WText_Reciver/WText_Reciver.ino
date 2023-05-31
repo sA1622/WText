@@ -1,6 +1,9 @@
 #include <Keypad.h>
 //#include <String.h>
 #include<LiquidCrystal_I2C.h>
+#include<SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 const byte ROWS = 4; //four rows
 const byte COLS = 4; //three columns
 int timepressed[17] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
@@ -17,7 +20,16 @@ unsigned long currentMillis;
 const unsigned long period = 100;
 bool adress_get = false;
 bool pipe_get = false;
+bool sender = false;
+bool reciver = false;
+char adress[6];
+int adress_final;
+char pipe[2];
+int pipe_final;
 int k=0;
+bool sender_mode = false;
+bool reciver_mode = false;
+RF24 radio(7, 8); 
 //int times=0; 
 char keys[ROWS][COLS] = {
   {'1','2','3','A'},
@@ -35,7 +47,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 void setup(){
   Serial.begin(9600);
   startMillis = millis();
-  lcd.begin();
+  lcd.init();
   lcd.backlight();
   start_text();
 }
@@ -48,8 +60,12 @@ void loop(){
     adress_get = true;
     lcd.setCursor(0,0);
     message_ready.remove(message_ready.length()-1);
+    message_ready.toCharArray(adress,sizeof(adress));
+    adress_final = atoi(adress);
     lcd.print("Adress: " + message_ready);
-    Serial.println(message_ready);
+    //Serial.println(message_ready);
+    Serial.println("Adress");
+    Serial.println(adress_final);
     delay(2000);
     for(int a=0;a<16;a++) timepressed[a] = 1;
     delay(1000);
@@ -63,8 +79,12 @@ void loop(){
     pipe_get = true;
     lcd.setCursor(0,0);
     message_ready.remove(message_ready.length()-1);
+    message_ready.toCharArray(pipe,sizeof(pipe));
+    pipe_final = atoi(pipe);
     lcd.print("Pipe: " + message_ready);
     Serial.println(message_ready);
+    Serial.println("Pipe");
+    Serial.println(pipe_final);
     delay(2000);
     for(int a=0;a<16;a++) timepressed[a] = 1;
     delay(1000);
@@ -593,6 +613,91 @@ void Keyboard_funct()
       lcd.print(message_ready);
       //for(int a=0;a<16;a++) timepressed[a] = 1;
       //times=0;
+    }
+    break;
+
+
+
+    case 'A': //Sender
+    if(sender_mode==false){
+    //times++;
+    //char key = keypad.getKey();
+    k=0;
+    radio.begin();
+    radio.openWritingPipe(adress_final);
+    radio.setPALevel(RF24_PA_MAX);
+    radio.stopListening();
+    lcd.print("Sender mode");
+    delay(2000);
+    lcd.clear();
+    //message_final.concat(message[i]);
+    sender_mode=true;
+    reciver_mode=false;
+    }
+    break;
+
+
+
+
+
+    case 'B': //Reciver
+    if(reciver_mode==false){
+    //times++;
+    //char key = keypad.getKey();
+    k=0;
+    radio.begin();
+    radio.openReadingPipe(0, adress_final);
+    radio.setPALevel(RF24_PA_MAX);
+    radio.startListening();
+    lcd.setCursor(0,0);
+    lcd.print("Reciver mode");
+    delay(2000);
+    lcd.clear();
+    //message_final.concat(message[i]);
+    sender_mode=false;
+    reciver_mode=true;
+    }
+    break;
+
+
+
+
+    case 'C': //Send message
+    if(sender_mode==true){
+    if(message_ready=="")
+    {
+      Serial.println(message_ready);
+      lcd.clear();
+      lcd.print("Message empty");
+      delay(2000);
+      lcd.clear();
+    }
+    /*if(reciver_mode==false){
+    //times++;
+    //char key = keypad.getKey();
+    k=0;
+    radio.begin();
+    radio.openReadingPipe(0, adress_final);
+    radio.setPALevel(RF24_PA_MAX);
+    radio.startListening();
+    lcd.setCursor(0,0);
+    lcd.print("Reciver mode");
+    delay(2000);
+    lcd.clear();
+    //message_final.concat(message[i]);
+    sender_mode=false;
+    reciver_mode=true;
+    }*/
+    //const char text[] = "Hello World";
+    else{
+    radio.write(&message_ready, sizeof(message_ready));
+    delay(1000);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Message was sent");
+    delay(2000);
+    lcd.clear();
+    }
     }
     break;
     }
