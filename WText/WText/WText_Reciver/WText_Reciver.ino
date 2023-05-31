@@ -697,9 +697,17 @@ void Keyboard_funct()
     lcd.print("Message was sent");
     delay(2000);
     lcd.clear();
+    lcd.print(message_ready);
     }
     }
     break;
+
+
+
+
+
+
+    
     }
 }
 void start_text()
