@@ -27,8 +27,19 @@ int adress_final;
 char pipe[2];
 int pipe_final;
 int k=0;
+char text[32] = "";
 bool sender_mode = false;
 bool reciver_mode = false;
+byte recived_message_icon[] = {
+  B01110,
+  B11111,
+  B11111,
+  B01110,
+  B00000,
+  B00100,
+  B01110,
+  B00100
+};
 RF24 radio(7, 8); 
 //int times=0; 
 char keys[ROWS][COLS] = {
@@ -50,6 +61,7 @@ void setup(){
   lcd.init();
   lcd.backlight();
   start_text();
+  lcd.createChar(0,recived_message_icon);
 }
   
 void loop(){
@@ -71,6 +83,7 @@ void loop(){
     delay(1000);
     lcd.clear();
     message_ready = "";
+    //i=0;
   }
   if(message_ready.length()>1&&adress_get==true&&pipe_get==false)
   {
@@ -90,6 +103,7 @@ void loop(){
     delay(1000);
     lcd.clear();
     message_ready = "";
+    //i=0;
   }
   message_final.reserve(128);
   currentMillis = millis();
@@ -672,23 +686,6 @@ void Keyboard_funct()
       delay(2000);
       lcd.clear();
     }
-    /*if(reciver_mode==false){
-    //times++;
-    //char key = keypad.getKey();
-    k=0;
-    radio.begin();
-    radio.openReadingPipe(0, adress_final);
-    radio.setPALevel(RF24_PA_MAX);
-    radio.startListening();
-    lcd.setCursor(0,0);
-    lcd.print("Reciver mode");
-    delay(2000);
-    lcd.clear();
-    //message_final.concat(message[i]);
-    sender_mode=false;
-    reciver_mode=true;
-    }*/
-    //const char text[] = "Hello World";
     else{
     radio.write(&message_ready, sizeof(message_ready));
     delay(1000);
@@ -704,6 +701,41 @@ void Keyboard_funct()
 
 
 
+
+
+
+    case 'D': //Display recived message
+    if(reciver_mode==true){
+      if (radio.available()) {
+        radio.read(&text, sizeof(text));
+        Serial.println(text);
+        }
+
+      
+    if(text=="")//NULL
+    {
+      Serial.println(message_ready);
+      lcd.clear();
+      lcd.print("No new messages");
+      delay(2000);
+      lcd.clear();
+    }
+    else{
+    lcd.setCursor(19,3);
+    lcd.print(" ");
+    lcd.setCursor(0,0);
+    lcd.print(text);
+    delay(1000);
+    text[0]='\0';
+    //lcd.clear();
+    /*lcd.setCursor(0,0);
+    lcd.print("Message was sent");
+    delay(2000);
+    lcd.clear();
+    lcd.print(message_ready);*/
+    }
+    }
+    break;
 
 
 
