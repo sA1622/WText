@@ -8,10 +8,11 @@ const byte ROWS = 4; //four rows
 const byte COLS = 4; //three columns
 int timepressed[17] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 byte messageLocation = 0;
-char message[20];
+//char message[20];
+char text_sender[32] = "";
 LiquidCrystal_I2C lcd(0x27,20,4);
 //String message;
-char *p;
+//char *p;
 unsigned int i=0;
 String message_final;
 String message_ready;
@@ -27,7 +28,7 @@ int adress_final;
 char pipe[2];
 int pipe_final;
 int k=0;
-char text[32] = "";
+String text_out = "";
 bool sender_mode = false;
 bool reciver_mode = false;
 byte recived_message_icon[] = {
@@ -55,17 +56,29 @@ byte colPins[COLS] = {A0,A1,A2,A3}; //connect to the column pinouts of the keypa
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 
+const byte addresses[][6] = {"00001", "00002"}; //This device ID is 00001 -> The first device => Reads on the 00001 address
+
 void setup(){
   Serial.begin(9600);
   startMillis = millis();
-  lcd.init();
+  radio.begin();
+  lcd.begin();
   lcd.backlight();
   start_text();
   lcd.createChar(0,recived_message_icon);
-}
-  
-void loop(){
-  if(message_ready.length()>5&&adress_get==false)
+  radio.openWritingPipe(addresses[1]); // 00002
+  radio.openReadingPipe(1, addresses[0]); // 00001
+  radio.setPALevel(RF24_PA_MIN);
+  text_out.reserve(32);
+
+
+
+
+
+
+
+
+  /*if(message_ready.length()>5&&adress_get==false)
   {
     //nrf adress =(message_ready);
     lcd.clear();
@@ -107,39 +120,40 @@ void loop(){
   }
   message_final.reserve(128);
   currentMillis = millis();
-    // just print the pressed key
-   /*if (key){
-    Serial.print("Key ");
-    Serial.print(key);
-    Serial.println(" is pressed");
-  } 
-  
-  // this checks if 4 is pressed, then do something. Here  we print the text but you can control something.
-  if (key =='4'){
-    // do something here is 4 is pressed
-    Serial.println("Key 4 is pressed -> Action");
-  }*/
-  //int aux1=i;
   /////keyboard
   Keyboard_funct(); 
-    //timepressed = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-  //}
   Serial.println(message_ready);
   LcdDisplayMessage();
-  //Serial.println();
-  //Serial.println(currentMillis-startMillis);
-  //k++;
-  
-  /*if(aux1<i){ startMillis=currentMillis;
-  aux1=i;
-  
-  }*/
-  //for(int a=0;a<16;a++) timepressed[a] = 1;
-  checkStringLastChar();
+  checkStringLastChar();*/
 }
+  
+
+void loop(){
+  
+  //message_final.reserve(32); //Max nRF24l01 buffer size
+  message_final.reserve(128);
+  message_ready.reserve(32);
+  currentMillis = millis();
+  /////keyboard
+  Keyboard_funct(); 
+  Serial.println(message_ready);
+  LcdDisplayMessage();
+  checkStringLastChar();
+  Reciver_funct();
+}
+
+
+
+
+
+
+
+
+
+
 void checkStringLastChar()
 {
-  message_ready.reserve(128);
+  message_ready.reserve(32);
   //if(message_final.charAt(message_final.length()-1) != message_ready.charAt(message_ready.length()-1)&&times<10){ //&&times<10
     message_ready.concat(message_final);
     //Serial.println(times);
@@ -637,10 +651,6 @@ void Keyboard_funct()
     //times++;
     //char key = keypad.getKey();
     k=0;
-    radio.begin();
-    radio.openWritingPipe(adress_final);
-    radio.setPALevel(RF24_PA_MAX);
-    radio.stopListening();
     lcd.print("Sender mode");
     delay(2000);
     lcd.clear();
@@ -659,10 +669,6 @@ void Keyboard_funct()
     //times++;
     //char key = keypad.getKey();
     k=0;
-    radio.begin();
-    radio.openReadingPipe(0, adress_final);
-    radio.setPALevel(RF24_PA_MAX);
-    radio.startListening();
     lcd.setCursor(0,0);
     lcd.print("Reciver mode");
     delay(2000);
@@ -687,12 +693,12 @@ void Keyboard_funct()
       lcd.clear();
     }
     else{
-    radio.write(&message_ready, sizeof(message_ready));
-    delay(1000);
+    Sender_funct();
+    delay(500);
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("Message was sent");
-    delay(2000);
+    delay(1500);
     lcd.clear();
     lcd.print(message_ready);
     }
@@ -706,13 +712,9 @@ void Keyboard_funct()
 
     case 'D': //Display recived message
     if(reciver_mode==true){
-      if (radio.available()) {
-        radio.read(&text, sizeof(text));
-        Serial.println(text);
-        }
 
       
-    if(text=="")//NULL
+    if(text_out=="")//NULL
     {
       Serial.println(message_ready);
       lcd.clear();
@@ -721,18 +723,13 @@ void Keyboard_funct()
       lcd.clear();
     }
     else{
-    lcd.setCursor(19,3);
+    lcd.setCursor(18,3);
     lcd.print(" ");
     lcd.setCursor(0,0);
-    lcd.print(text);
+    lcd.print(text_out);
     delay(1000);
-    text[0]='\0';
-    //lcd.clear();
-    /*lcd.setCursor(0,0);
-    lcd.print("Message was sent");
-    delay(2000);
-    lcd.clear();
-    lcd.print(message_ready);*/
+    //wait for keypress *
+    text_out="";
     }
     }
     break;
@@ -752,4 +749,30 @@ void start_text()
   lcd.print("adress!");
   delay(5000);
   lcd.clear();
+}
+
+
+
+
+
+void Sender_funct()
+{
+  radio.stopListening();
+  message_ready.toCharArray(text_sender,sizeof(text_sender));
+  radio.write(&text_sender,sizeof(text_sender));
+}
+void Reciver_funct()
+{
+  radio.startListening();
+  if(radio.available())
+  {
+    char text[32]="";
+    radio.read(&text,sizeof(text));
+    text_out = String(text);
+  }
+  if(text_out!=""){
+    lcd.setCursor(18,3);
+    lcd.write(0);
+    //lcd.setCursor(message_ready.length()%20,message_ready.length()/20);
+}
 }
