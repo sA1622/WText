@@ -8,11 +8,8 @@ const byte ROWS = 4; //four rows
 const byte COLS = 4; //three columns
 int timepressed[17] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
 byte messageLocation = 0;
-//char message[20];
 char text_sender[32] = "";
 LiquidCrystal_I2C lcd(0x27,20,4);
-//String message;
-//char *p;
 unsigned int i=0;
 String message_final;
 String message_ready;
@@ -32,14 +29,14 @@ String text_out = "";
 bool sender_mode = false;
 bool reciver_mode = false;
 byte recived_message_icon[] = {
-  B01110,
-  B11111,
-  B11111,
-  B01110,
-  B00000,
   B00100,
   B01110,
-  B00100
+  B01110,
+  B01110,
+  B11111,
+  B00000,
+  B00100,
+  B00000
 };
 RF24 radio(7, 8); 
 //int times=0; 
@@ -70,14 +67,6 @@ void setup(){
   radio.openReadingPipe(1, addresses[1]); // 00002
   radio.setPALevel(RF24_PA_MIN);
   text_out.reserve(32);
-
-
-
-
-
-
-
-
   /*if(message_ready.length()>5&&adress_get==false)
   {
     //nrf adress =(message_ready);
@@ -141,16 +130,6 @@ void loop(){
   checkStringLastChar();
   Reciver_funct();
 }
-
-
-
-
-
-
-
-
-
-
 void checkStringLastChar()
 {
   message_ready.reserve(32);
@@ -162,8 +141,6 @@ void checkStringLastChar()
   //message_ready.remove(message_ready.length()-1);
   message_final="\0";
 }
-
-
 void LcdDisplayMessage()
 {
   if(message_ready.length()<80){ 
@@ -186,7 +163,6 @@ void LcdDisplayMessage()
   }
   //times=0; 
 }
-
 /*
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -750,11 +726,6 @@ void start_text()
   delay(5000);
   lcd.clear();
 }
-
-
-
-
-
 void Sender_funct()
 {
   radio.stopListening();
